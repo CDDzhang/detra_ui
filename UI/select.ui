@@ -69,6 +69,32 @@
     </item>
    </layout>
   </widget>
+  <widget class="QWidget" name="widget_2" native="true">
+   <property name="geometry">
+    <rect>
+     <x>310</x>
+     <y>580</y>
+     <width>184</width>
+     <height>44</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <item>
+     <widget class="QPushButton" name="Detectorbutton">
+      <property name="text">
+       <string>Detector</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="Trackerbutton">
+      <property name="text">
+       <string>Tracker</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
  </widget>
  <resources/>
  <connections>
