@@ -8,11 +8,13 @@ from yolov5.utils.datasets import *
 from yolov5.utils.utils import *
 import cv2
 import torch
+import operator
 
 class select(QDialog):
     def __init__(self):
         super().__init__()
         self.resize(300,300)
+        self.object_list = {}
         self.ReadLabel = False
         weights_path = '/home/zhangcheng/PycharmProjects/Detra_ui/yolov5/weights/yolov5s.pt'
         self.model,self.half,self.device = detect.load_weights(weights_path,device='')
@@ -25,6 +27,7 @@ class select(QDialog):
         self.stopbutton.clicked.connect(self.stopframe)
         self.Detectorbutton.clicked.connect(self.startDetector)
         self.Trackerbutton.clicked.connect(self.startTracker)
+        self.objectlistview.clicked.connect(self.printxywh)
 
         self.timer = QTimer()
         self.timer.start(24)
@@ -35,17 +38,18 @@ class select(QDialog):
             ret, frame = self.cap.read()
             img_height, img_width, img_depth = frame.shape
             if self.Detector == True:
-                frame = self.YOLO5_detect(frame)
+                frame,self.object_list = self.YOLO5_detect(frame)
+                self.list_view()
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
             frame = QImage(frame.data, img_width, img_height, img_width * img_depth, QImage.Format_RGB888)
-
             self.imglabel.setPixmap(QPixmap.fromImage(frame))
+
 
 
     def startframe(self):
         self.ReadLabel = True
         self.cap = cv2.VideoCapture(0)
+        self.object_list = {}
 
     def stopframe(self):
         self.ReadLabel = False
@@ -90,9 +94,10 @@ class select(QDialog):
         # NMS
         pred = non_max_suppression(pred, conf_thres=0.4, iou_thres=0.5)
         s = ''
+        object_list = {}
         gn = torch.tensor(cap_img.shape)[[1, 0, 1, 0]]  # normalization gain whwh
         for i, det in enumerate(pred):
-            if pred is not None and len(det):
+            if pred is not None and det is not None:
                 s += '%gx%g ' % img.shape[2:]  # print string
                 # Print results
                 for c in det[:, -1].unique():
@@ -104,13 +109,35 @@ class select(QDialog):
                     #     with open(txt_path + '.txt', 'a') as f:
                     #         f.write(('%g ' * 5 + '\n') % (cls, *xywh))  # label format
                     if save_img or view_img:  # Add bbox to image
+                        list_i = 1
                         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1,4))/gn).view(-1).tolist()
-
                         label = '%s %.2f' % (names[int(cls)], conf)
+                        class_name = label.split(' ')[0]
+                        conf = label.split(' ')[1]
+                        while(object_list.get(class_name+str(list_i)) is not None ):
+                            list_i = list_i + 1
+                        object_list[class_name+str(list_i)] = xywh
                         plot_one_box(xyxy, cap_img, label=label, color=colors[int(cls)], line_thickness=3)
             else:
                 cap_img = cap_img
-        return cap_img
+        return cap_img,object_list
+
+    def list_view(self):
+        widgetres = []
+        count = self.objectlistview.count()
+        for i in range(count):
+            widgetres.append( self.objectlistview.item(i).text())
+        if self.object_list is not None and self.Detector == True:
+            if operator.eq(widgetres,list(self.object_list.keys())) == False:
+                self.objectlistview.clear()
+                self.objectlistview.addItems(list(self.object_list.keys()))
+
+
+    def printxywh(self):
+        item = self.objectlistview.currentItem().text()
+        current_xywh = self.object_list[item]
+        print(current_xywh)
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

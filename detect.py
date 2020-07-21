@@ -58,7 +58,9 @@ def detect(cap_img,imgsz=640,save_img=False,view_img=True):
     pred = model(img)[0]
     # NMS
     pred = non_max_suppression(pred,conf_thres=0.4,iou_thres=0.5)
+    prt_img = cap_img
     s = ''
+    object_list = {}
     gn = torch.tensor(cap_img.shape)[[1, 0, 1, 0]]  # normalization gain whwh
     for i,det in enumerate(pred):
         if pred is not None and len(det):
@@ -70,12 +72,21 @@ def detect(cap_img,imgsz=640,save_img=False,view_img=True):
                 s += '%g %ss, ' % (n, names[int(c)])  # add to string
 
             # Write results
+            list_i =0
             for *xyxy, conf, cls in det:
+                list_i += 1
                 if view_img:  # Add bbox to image
                     xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
                     label = '%s %.2f' % (names[int(cls)], conf)
+                    class_name = label.split(' ')[0]
+                    print(class_name)
+                    conf = label.split(' ')[1]
+                    if (object_list.get(class_name) is None):
+                        object_list[class_name] = xywh
+                    else:
+                        object_list[class_name+str(list_i)] = xywh
                     plot_one_box(xyxy, cap_img, label=label, color=colors[int(cls)], line_thickness=3)
-
+    print(object_list)
     return cap_img
 
 
