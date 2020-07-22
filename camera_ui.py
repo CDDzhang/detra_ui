@@ -9,6 +9,7 @@ from yolov5.utils.utils import *
 import cv2
 import torch
 import operator
+import ui_tracker
 
 class select(QDialog):
     def __init__(self):
@@ -20,6 +21,9 @@ class select(QDialog):
         self.model,self.half,self.device = detect.load_weights(weights_path,device='')
         self.Detector = False
         self.Tracker = False
+        self.track_model,self.tracker = ui_tracker.tracker_loadweight()
+        self.xywh = []
+        self.tracker_init_label = False
 
 
         loadUi("UI/select.ui",self)
@@ -27,7 +31,6 @@ class select(QDialog):
         self.stopbutton.clicked.connect(self.stopframe)
         self.Detectorbutton.clicked.connect(self.startDetector)
         self.Trackerbutton.clicked.connect(self.startTracker)
-        self.objectlistview.clicked.connect(self.printxywh)
 
         self.timer = QTimer()
         self.timer.start(24)
@@ -37,9 +40,14 @@ class select(QDialog):
         if (self.ReadLabel):
             ret, frame = self.cap.read()
             img_height, img_width, img_depth = frame.shape
-            if self.Detector == True:
+            if self.Detector == True and self.Tracker == False:
                 frame,self.object_list = self.YOLO5_detect(frame)
                 self.list_view()
+            if self.Tracker == True and len(self.xywh) != 0 :
+                if self.tracker_init_label == False:
+                    self.state,self.tracker_init_label = ui_tracker.tracker_init(frame,self.xywh,self.tracker_init_label,self.tracker,self.track_model)
+                else:
+                    frame = ui_tracker.tracker_run(frame,self.tracker_init_label,self.state,self.tracker)
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame = QImage(frame.data, img_width, img_height, img_width * img_depth, QImage.Format_RGB888)
             self.imglabel.setPixmap(QPixmap.fromImage(frame))
@@ -61,6 +69,8 @@ class select(QDialog):
 
     def startTracker(self):
         self.Tracker = True
+        self.Detector = False
+        self.xywh = self.getxywh()
 
     def YOLO5_detect(self,cap_img,imgsz=640,save_img=False,view_img=True):
         imgsz = check_img_size(imgsz, s=self.model.stride.max())
@@ -133,11 +143,13 @@ class select(QDialog):
                 self.objectlistview.addItems(list(self.object_list.keys()))
 
 
-    def printxywh(self):
+    def getxywh(self):
         item = self.objectlistview.currentItem().text()
         current_xywh = self.object_list[item]
-        print(current_xywh)
-
+        if current_xywh is not None:
+            return current_xywh
+        else:
+            print("please check clicked either")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
