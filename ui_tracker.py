@@ -31,6 +31,7 @@ def tracker_init(cap_img,initBB,init_already,tracker,model):
         gw = cap_img.shape[0]
         gh = cap_img.shape[1]
         lx,ly,w,h = initBB[0]*gw,initBB[1]*gh,initBB[2]*gw,initBB[3]*gh
+        print(lx,ly,w,h)
         target_pos = np.array([lx + w / 2, ly + h / 2])
         target_sz = np.array([w, h])
         state = tracker.init(cap_img, target_pos, target_sz, model)  # init tracker

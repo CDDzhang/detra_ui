@@ -3,13 +3,13 @@ from PyQt5.Qt import *
 import sys
 import detect
 import torch.backends.cudnn as cudnn
-from yolov5.models.experimental import *
 from yolov5.utils.datasets import *
 from yolov5.utils.utils import *
 import cv2
 import torch
 import operator
 import ui_tracker
+
 
 class select(QDialog):
     def __init__(self):
@@ -24,6 +24,7 @@ class select(QDialog):
         self.track_model,self.tracker = ui_tracker.tracker_loadweight()
         self.xywh = []
         self.tracker_init_label = False
+        self.frame_num = 0
 
 
         loadUi("UI/select.ui",self)
@@ -31,6 +32,7 @@ class select(QDialog):
         self.stopbutton.clicked.connect(self.stopframe)
         self.Detectorbutton.clicked.connect(self.startDetector)
         self.Trackerbutton.clicked.connect(self.startTracker)
+        self.Trackerstopbutton.clicked.connect(self.stopTracker)
 
         self.timer = QTimer()
         self.timer.start(24)
@@ -38,6 +40,7 @@ class select(QDialog):
 
     def webcam(self):
         if (self.ReadLabel):
+            self.frame_num += 1
             ret, frame = self.cap.read()
             img_height, img_width, img_depth = frame.shape
             if self.Detector == True and self.Tracker == False:
@@ -53,6 +56,10 @@ class select(QDialog):
             self.imglabel.setPixmap(QPixmap.fromImage(frame))
 
 
+    def stopTracker(self):
+        self.Tracker = False
+        self.Detector = True
+        self.tracker_init_label = False
 
     def startframe(self):
         self.ReadLabel = True
@@ -71,13 +78,13 @@ class select(QDialog):
         self.Tracker = True
         self.Detector = False
         self.xywh = self.getxywh()
+        print(self.xywh)
 
     def YOLO5_detect(self,cap_img,imgsz=640,save_img=False,view_img=True):
         imgsz = check_img_size(imgsz, s=self.model.stride.max())
         if self.half:
             self.model.half()
 
-        vid_path, vid_writer = None, None
         view_img = True
         cudnn.benchmark = True
 
@@ -118,15 +125,15 @@ class select(QDialog):
                 for *xyxy, conf, cls in det:
                     #     with open(txt_path + '.txt', 'a') as f:
                     #         f.write(('%g ' * 5 + '\n') % (cls, *xywh))  # label format
-                    if save_img or view_img:  # Add bbox to image
+                    if view_img:  # Add bbox to image
                         list_i = 1
                         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1,4))/gn).view(-1).tolist()
                         label = '%s %.2f' % (names[int(cls)], conf)
                         class_name = label.split(' ')[0]
-                        conf = label.split(' ')[1]
                         while(object_list.get(class_name+str(list_i)) is not None ):
                             list_i = list_i + 1
                         object_list[class_name+str(list_i)] = xywh
+                        label = '%s %.2f' % (class_name+str(list_i), conf)
                         plot_one_box(xyxy, cap_img, label=label, color=colors[int(cls)], line_thickness=3)
             else:
                 cap_img = cap_img

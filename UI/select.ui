@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1056</width>
+    <width>1306</width>
     <height>643</height>
    </rect>
   </property>
@@ -62,9 +62,9 @@
   <widget class="QWidget" name="widget_2" native="true">
    <property name="geometry">
     <rect>
-     <x>310</x>
-     <y>580</y>
-     <width>184</width>
+     <x>563</x>
+     <y>560</y>
+     <width>201</width>
      <height>44</height>
     </rect>
    </property>
@@ -80,6 +80,13 @@
      <widget class="QPushButton" name="Trackerbutton">
       <property name="text">
        <string>Tracker</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="Trackerstopbutton">
+      <property name="text">
+       <string>SHUT</string>
       </property>
      </widget>
     </item>
